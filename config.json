@@ -2,5 +2,6 @@
     "title":"AlgoScope",
     "subTitle":"学术八戒爱茶歇",
     "avatarUrl":"https://github.com/algo-scope/imgBed/blob/6a2a457534cf46e020eef89854c1a01420ebbf02/logo.png",
-    "GMEEK_VERSION":"last"
+    "GMEEK_VERSION":"last",
+    "showPostSource":0
 }
