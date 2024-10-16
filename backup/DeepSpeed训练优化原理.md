@@ -35,7 +35,7 @@
 以微软的bing_bert 训练代码为例，
 
 1、 编写sparse_attention配置文件，后面要传入get_sparse_attention_config函数
-[https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/deepspeed_bsz64k_lamb_config_seq128.json#L24-L33](https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/deepspeed_bsz64k_lamb_config_seq128.json" \l "L24-L33)
+https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/deepspeed_bsz64k_lamb_config_seq128.json#L24-L33
 ![image.png](https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/202410161345995.png)
 
 通过修改配置中的mode可以使用任何支持的稀疏结构更新 DeepSpeed 配置文件，并相应地设置参数，mode有多个实现，对应多种不同的SA结构：
@@ -85,19 +85,19 @@
 
 上述mode的配置具体加载到代码中后的示例：
 
-[https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/nvidia/modelingpreln_layerdrop.py#L79-L109](https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/nvidia/modelingpreln_layerdrop.py" \l "L79-L109)
+https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/nvidia/modelingpreln_layerdrop.py#L79-L109
 ![image.png](https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/202410161346968.png)
 
 2、 将上一步的稀疏注意力配置通过get_sparse_attention_config函数读取，传入模型初始化
 
-[https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/nvidia/modelingpreln_layerdrop.py#L1024-L1032](https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/nvidia/modelingpreln_layerdrop.py" \l "L1024-L1032)
+https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/nvidia/modelingpreln_layerdrop.py#L1024-L1032
 
 class BertModel(BertPreTrainedModel):
 ![image.png](https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/202410161346489.png)
 
 3、encoder模型初始化时的注意力层更新为稀疏注意力
 
-[https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/nvidia/modelingpreln_layerdrop.py#L610-L620](https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/nvidia/modelingpreln_layerdrop.py" \l "L610-L620)
+https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/nvidia/modelingpreln_layerdrop.py#L610-L620
 
 class BertEncoder(nn.Module):
 ![image.png](https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/202410161347315.png)
@@ -106,10 +106,10 @@ class BertEncoder(nn.Module):
 
 您可能需要对input_ids和attention_mask的序列维度进行填充，使其成为稀疏块大小的倍数，用在模型forward里
 
-[https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/nvidia/modelingpreln_layerdrop.py#L1067-L1093](https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/nvidia/modelingpreln_layerdrop.py" \l "L1067-L1093)
+https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/nvidia/modelingpreln_layerdrop.py#L1067-L1093
 ![image.png](https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/202410161347295.png)
 
-要使用DeepSpeed Sparse Attention，需要在启动脚本中通过--deepspeed_sparse_attention参数启用它，见[https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/ds_sa_train_bert_bsz64k_seq128.sh#L18](https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/ds_sa_train_bert_bsz64k_seq128.sh" \l "L18)
+要使用DeepSpeed Sparse Attention，需要在启动脚本中通过--deepspeed_sparse_attention参数启用它，见https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/ds_sa_train_bert_bsz64k_seq128.sh#L18
 ![image.png](https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/202410161347661.png)
 
 # 超快稠密transformer核（Ultra-fast dense transformer kernels）
@@ -162,7 +162,7 @@ Deepspeed发布时重点宣传了transformer核，跟ZeRO-2并列，主要作用
 
 以BingBertGlue训练代码为例，
 
-[https://github.com/microsoft/DeepSpeedExamples/blob/master/training/BingBertGlue/nvidia/modelingpreln_layerdrop.py#L582-L604](https://github.com/microsoft/DeepSpeedExamples/blob/master/training/BingBertGlue/nvidia/modelingpreln_layerdrop.py" \l "L582-L604)
+https://github.com/microsoft/DeepSpeedExamples/blob/master/training/BingBertGlue/nvidia/modelingpreln_layerdrop.py#L582-L604
 ![image.png](https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/202410161350335.png)
 
 参数主要分为4个大类：
@@ -253,7 +253,7 @@ comm_backend_name用于指示要使用的后端实现。您可以通过将comm_b
 
 由于1位压缩不能代表精确的零，因此，如果参数在训练过程中具有恒定的零梯度，则压缩误差将继续在动量中积累。例如，对于BERT预训练seq长度128，Bert.embeddings.position_embeddings.Weight在其梯度和动量129至512中具有恒定的零，因为它只能学习到seq长度128，而模型则支持到seq长度512.因此，在1位Adam V2中，我们增加了动量mask的支持，以指定那些在其梯度中具有恒定零的参数。有关如何配置此动量mask，请参见以下示例脚本。
 
-[https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/deepspeed_train.py#L426-L453](https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/deepspeed_train.py" \l "L426-L453)
+https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/deepspeed_train.py#L426-L453
 
 ![image.png](https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/202410161359774.png)
 
@@ -337,7 +337,7 @@ deepspeed启动命令行：
 
 如果在DeepSpeed初始化时传递了LoRA模型，那么DeepSpeed引擎将识别LoRA冻结参数。然而，流行的实现是初始化一个基本模型，然后再转换为LoRA模型。在这种情况下，用户需要在LoRA模型转换后显式调用DeepSpeed引擎。这只需要一行代码。下面显示了一个训练脚本的示例片段
 
-[https://github.com/microsoft/DeepSpeed/blob/master/docs/_tutorials/mixed_precision_zeropp.md#training-script-changes](https://github.com/microsoft/DeepSpeed/blob/master/docs/_tutorials/mixed_precision_zeropp.md" \l "training-script-changes)
+https://github.com/microsoft/DeepSpeed/blob/master/docs/_tutorials/mixed_precision_zeropp.md#training-script-changes
 
 ![image.png](https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/202410161402054.png)
 
@@ -347,7 +347,7 @@ deepspeed启动命令行：
 
 PEFT模型的使用非常方便，只需要按照原本的方式实例化模型，然后设置一下LoRA的config，调用一下get_peft_model方法，就获得了在原模型基础上的PEFT模型，对于LoRA策略来讲，就是在预训练参数矩阵W的基础上增加了矩阵分解的旁支。在下面的例子中，选择了attention中的q和v的部分做LoRA。
 
-[https://github.com/tloen/alpaca-lora/blob/main/finetune.py#L174-L184](https://github.com/tloen/alpaca-lora/blob/main/finetune.py" \l "L174-L184)
+https://github.com/tloen/alpaca-lora/blob/main/finetune.py#L174-L184
 
 ![image.png](https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/202410161402496.png)
 
@@ -363,13 +363,13 @@ PEFT模型的使用非常方便，只需要按照原本的方式实例化模型�
 
 模型训练完成后，可以调用PEFT重写的save_pretrained函数保存权重，该方法只会保存LoRA训练的部分，因此权重文件特别小
 
-[https://github.com/tloen/alpaca-lora/blob/main/finetune.py#L273-L275](https://github.com/tloen/alpaca-lora/blob/main/finetune.py" \l "L273-L275)
+https://github.com/tloen/alpaca-lora/blob/main/finetune.py#L273-L275
 
 ![image.png](https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/202410161402117.png)
 
 推理：
 
-[https://github.com/tloen/alpaca-lora/blob/main/generate.py#L26-L52](https://github.com/tloen/alpaca-lora/blob/8bb8579e403dc78e37fe81ffbb253c413007323f/generate.py" \l "L26-L52)
+https://github.com/tloen/alpaca-lora/blob/main/generate.py#L26-L52
 
 ![image.png](https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/202410161403515.png)
 

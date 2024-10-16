@@ -93,7 +93,7 @@ body{box-sizing: border-box;min-width: 200px;max-width: 900px;margin: 20px auto;
 <h2>代码示例</h2>
 <p>以微软的bing_bert 训练代码为例，</p>
 <p>1、 编写sparse_attention配置文件，后面要传入get_sparse_attention_config函数<br>
-[https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/deepspeed_bsz64k_lamb_config_seq128.json#L24-L33](<a href="https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/deepspeed_bsz64k_lamb_config_seq128.json">https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/deepspeed_bsz64k_lamb_config_seq128.json</a>" \l "L24-L33)<br>
+<a href="https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/deepspeed_bsz64k_lamb_config_seq128.json#L24-L33">https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/deepspeed_bsz64k_lamb_config_seq128.json#L24-L33</a><br>
 <a target="_blank" rel="noopener noreferrer nofollow" href="https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/202410161345995.png"><img src="https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/202410161345995.png" alt="image.png" style="max-width: 100%;"></a></p>
 <p>通过修改配置中的mode可以使用任何支持的稀疏结构更新 DeepSpeed 配置文件，并相应地设置参数，mode有多个实现，对应多种不同的SA结构：</p>
 <p><strong>SparsityConfig</strong>：这个模块是所有稀疏结构的父类，包含所有稀疏结构的共享特性，mode中没有这个选项，但包含它的参数。</p>
@@ -154,21 +154,21 @@ body{box-sizing: border-box;min-width: 200px;max-width: 900px;margin: 20px auto;
 </li>
 </ul>
 <p>上述mode的配置具体加载到代码中后的示例：</p>
-<p>[https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/nvidia/modelingpreln_layerdrop.py#L79-L109](<a href="https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/nvidia/modelingpreln_layerdrop.py">https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/nvidia/modelingpreln_layerdrop.py</a>" \l "L79-L109)<br>
+<p><a href="https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/nvidia/modelingpreln_layerdrop.py#L79-L109">https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/nvidia/modelingpreln_layerdrop.py#L79-L109</a><br>
 <a target="_blank" rel="noopener noreferrer nofollow" href="https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/202410161346968.png"><img src="https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/202410161346968.png" alt="image.png" style="max-width: 100%;"></a></p>
 <p>2、 将上一步的稀疏注意力配置通过get_sparse_attention_config函数读取，传入模型初始化</p>
-<p>[https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/nvidia/modelingpreln_layerdrop.py#L1024-L1032](<a href="https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/nvidia/modelingpreln_layerdrop.py">https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/nvidia/modelingpreln_layerdrop.py</a>" \l "L1024-L1032)</p>
+<p><a href="https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/nvidia/modelingpreln_layerdrop.py#L1024-L1032">https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/nvidia/modelingpreln_layerdrop.py#L1024-L1032</a></p>
 <p>class BertModel(BertPreTrainedModel):<br>
 <a target="_blank" rel="noopener noreferrer nofollow" href="https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/202410161346489.png"><img src="https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/202410161346489.png" alt="image.png" style="max-width: 100%;"></a></p>
 <p>3、encoder模型初始化时的注意力层更新为稀疏注意力</p>
-<p>[https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/nvidia/modelingpreln_layerdrop.py#L610-L620](<a href="https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/nvidia/modelingpreln_layerdrop.py">https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/nvidia/modelingpreln_layerdrop.py</a>" \l "L610-L620)</p>
+<p><a href="https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/nvidia/modelingpreln_layerdrop.py#L610-L620">https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/nvidia/modelingpreln_layerdrop.py#L610-L620</a></p>
 <p>class BertEncoder(nn.Module):<br>
 <a target="_blank" rel="noopener noreferrer nofollow" href="https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/202410161347315.png"><img src="https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/202410161347315.png" alt="image.png" style="max-width: 100%;"></a></p>
 <p>4、 输入数据pad和unpad</p>
 <p>您可能需要对input_ids和attention_mask的序列维度进行填充，使其成为稀疏块大小的倍数，用在模型forward里</p>
-<p>[https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/nvidia/modelingpreln_layerdrop.py#L1067-L1093](<a href="https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/nvidia/modelingpreln_layerdrop.py">https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/nvidia/modelingpreln_layerdrop.py</a>" \l "L1067-L1093)<br>
+<p><a href="https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/nvidia/modelingpreln_layerdrop.py#L1067-L1093">https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/nvidia/modelingpreln_layerdrop.py#L1067-L1093</a><br>
 <a target="_blank" rel="noopener noreferrer nofollow" href="https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/202410161347295.png"><img src="https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/202410161347295.png" alt="image.png" style="max-width: 100%;"></a></p>
-<p>要使用DeepSpeed Sparse Attention，需要在启动脚本中通过--deepspeed_sparse_attention参数启用它，见[https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/ds_sa_train_bert_bsz64k_seq128.sh#L18](<a href="https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/ds_sa_train_bert_bsz64k_seq128.sh">https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/ds_sa_train_bert_bsz64k_seq128.sh</a>" \l "L18)<br>
+<p>要使用DeepSpeed Sparse Attention，需要在启动脚本中通过--deepspeed_sparse_attention参数启用它，见<a href="https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/ds_sa_train_bert_bsz64k_seq128.sh#L18">https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/ds_sa_train_bert_bsz64k_seq128.sh#L18</a><br>
 <a target="_blank" rel="noopener noreferrer nofollow" href="https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/202410161347661.png"><img src="https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/202410161347661.png" alt="image.png" style="max-width: 100%;"></a></p>
 <h1>超快稠密transformer核（Ultra-fast dense transformer kernels）</h1>
 <h2>实现原理</h2>
@@ -199,7 +199,7 @@ body{box-sizing: border-box;min-width: 200px;max-width: 900px;margin: 20px auto;
 图9 训练速度对比
 <h2>代码示例</h2>
 <p>以BingBertGlue训练代码为例，</p>
-<p>[https://github.com/microsoft/DeepSpeedExamples/blob/master/training/BingBertGlue/nvidia/modelingpreln_layerdrop.py#L582-L604](<a href="https://github.com/microsoft/DeepSpeedExamples/blob/master/training/BingBertGlue/nvidia/modelingpreln_layerdrop.py">https://github.com/microsoft/DeepSpeedExamples/blob/master/training/BingBertGlue/nvidia/modelingpreln_layerdrop.py</a>" \l "L582-L604)<br>
+<p><a href="https://github.com/microsoft/DeepSpeedExamples/blob/master/training/BingBertGlue/nvidia/modelingpreln_layerdrop.py#L582-L604">https://github.com/microsoft/DeepSpeedExamples/blob/master/training/BingBertGlue/nvidia/modelingpreln_layerdrop.py#L582-L604</a><br>
 <a target="_blank" rel="noopener noreferrer nofollow" href="https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/202410161350335.png"><img src="https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/202410161350335.png" alt="image.png" style="max-width: 100%;"></a></p>
 <p>参数主要分为4个大类：</p>
 <ol>
@@ -269,7 +269,7 @@ $$x_t = x_{t-1} - \gamma C(g_t + e_{t-1}) $$</p>
 <p>cuda_aware用于基于MPI的实现，以表明基础MPI库支持CUDA-AWARE-AWARE通信。此功能仅在具有Infiniband InterConnect和Cuda-Awance MPI库（如MVAPICH2-GDR或OPENMPI）的系统上支持此。将cuda_aware设置为false将允许对基于以太网的系统进行训练。但是，通信将在通信之前和之后使用发件人以及CPU和GPU缓冲区之间的接收器侧内存副本进行。</p>
 <p>comm_backend_name用于指示要使用的后端实现。您可以通过将comm_backend_name设置为“ NCCL”和“ MPI”来在NCCL和基于MPI的实现之间进行选择。</p>
 <p>由于1位压缩不能代表精确的零，因此，如果参数在训练过程中具有恒定的零梯度，则压缩误差将继续在动量中积累。例如，对于BERT预训练seq长度128，Bert.embeddings.position_embeddings.Weight在其梯度和动量129至512中具有恒定的零，因为它只能学习到seq长度128，而模型则支持到seq长度512.因此，在1位Adam V2中，我们增加了动量mask的支持，以指定那些在其梯度中具有恒定零的参数。有关如何配置此动量mask，请参见以下示例脚本。</p>
-<p>[https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/deepspeed_train.py#L426-L453](<a href="https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/deepspeed_train.py">https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/deepspeed_train.py</a>" \l "L426-L453)</p>
+<p><a href="https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/deepspeed_train.py#L426-L453">https://github.com/microsoft/DeepSpeedExamples/blob/master/training/bing_bert/deepspeed_train.py#L426-L453</a></p>
 <p><a target="_blank" rel="noopener noreferrer nofollow" href="https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/202410161359774.png"><img src="https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/202410161359774.png" alt="image.png" style="max-width: 100%;"></a></p>
 <h2>0/1 Adam</h2>
 <p>0/1 Adam优化器，它可以提高在通信受限集群上的模型训练速度，特别适用于通信稠密型的大型模型。例如，它可以在不影响端到端模型准确性的情况下，将BERT-large预训练的总体通信量减少多达26倍。与1-bit Adam优化器相比，0/1 Adam通过<strong>自适应方差状态冻结</strong>提供了一种更灵活的压缩通信方式。此外，它还允许计算节点在训练过程中使用一种称为1-bit同步的技术跳过通信轮次，而不会影响收敛速度。我们有一篇论文详细介绍了技术细节（<a href="https://arxiv.org/abs/2202.06009%EF%BC%89%EF%BC%8C%E5%8C%85%E6%8B%AC%E7%AE%97%E6%B3%95%E3%80%81%E7%B3%BB%E7%BB%9F%E5%AE%9E%E7%8E%B0%E5%92%8C%E8%AF%84%E4%BC%B0%E7%BB%93%E6%9E%9C%E3%80%82" rel="nofollow">https://arxiv.org/abs/2202.06009），包括算法、系统实现和评估结果。</a></p>
@@ -320,12 +320,12 @@ $$ h = W_0 x + \Delta W x = W_0 x + B A x $$</p>
 <p><a target="_blank" rel="noopener noreferrer nofollow" href="https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/202410161402369.png"><img src="https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/202410161402369.png" alt="image.png" style="max-width: 100%;"></a></p>
 <p>通过命令行或者配置文件，将LoRA配置传入训练脚本</p>
 <p>如果在DeepSpeed初始化时传递了LoRA模型，那么DeepSpeed引擎将识别LoRA冻结参数。然而，流行的实现是初始化一个基本模型，然后再转换为LoRA模型。在这种情况下，用户需要在LoRA模型转换后显式调用DeepSpeed引擎。这只需要一行代码。下面显示了一个训练脚本的示例片段</p>
-<p>[https://github.com/microsoft/DeepSpeed/blob/master/docs/_tutorials/mixed_precision_zeropp.md#training-script-changes](<a href="https://github.com/microsoft/DeepSpeed/blob/master/docs/_tutorials/mixed_precision_zeropp.md">https://github.com/microsoft/DeepSpeed/blob/master/docs/_tutorials/mixed_precision_zeropp.md</a>" \l "training-script-changes)</p>
+<p><a href="https://github.com/microsoft/DeepSpeed/blob/master/docs/_tutorials/mixed_precision_zeropp.md#training-script-changes">https://github.com/microsoft/DeepSpeed/blob/master/docs/_tutorials/mixed_precision_zeropp.md#training-script-changes</a></p>
 <p><a target="_blank" rel="noopener noreferrer nofollow" href="https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/202410161402054.png"><img src="https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/202410161402054.png" alt="image.png" style="max-width: 100%;"></a></p>
 <p>转换方法：</p>
 <p>使用Parameter-Efficient Fine-Tuning (PEFT)，是huggingface开发的一个python工具，项目地址：<a href="https://github.com/huggingface/peft">https://github.com/huggingface/peft</a>，可以很方便地实现将普通的大模型变成用于支持轻量级fine-tune的模型，使用非常便捷。</p>
 <p>PEFT模型的使用非常方便，只需要按照原本的方式实例化模型，然后设置一下LoRA的config，调用一下get_peft_model方法，就获得了在原模型基础上的PEFT模型，对于LoRA策略来讲，就是在预训练参数矩阵W的基础上增加了矩阵分解的旁支。在下面的例子中，选择了attention中的q和v的部分做LoRA。</p>
-<p>[https://github.com/tloen/alpaca-lora/blob/main/finetune.py#L174-L184](<a href="https://github.com/tloen/alpaca-lora/blob/main/finetune.py">https://github.com/tloen/alpaca-lora/blob/main/finetune.py</a>" \l "L174-L184)</p>
+<p><a href="https://github.com/tloen/alpaca-lora/blob/main/finetune.py#L174-L184">https://github.com/tloen/alpaca-lora/blob/main/finetune.py#L174-L184</a></p>
 <p><a target="_blank" rel="noopener noreferrer nofollow" href="https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/202410161402496.png"><img src="https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/202410161402496.png" alt="image.png" style="max-width: 100%;"></a></p>
 <p>其中，LoRA参数直接写在训练代码里：</p>
 <p><a target="_blank" rel="noopener noreferrer nofollow" href="https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/202410161402868.png"><img src="https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/202410161402868.png" alt="image.png" style="max-width: 100%;"></a></p>
@@ -333,10 +333,10 @@ $$ h = W_0 x + \Delta W x = W_0 x + B A x $$</p>
 <p>可以通过 model.print_trainable_parameters() 来打印lora训练的参数量，可以看到微调时只训练了0.16%的参数</p>
 <p><a target="_blank" rel="noopener noreferrer nofollow" href="https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/202410161402926.png"><img src="https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/202410161402926.png" alt="image.png" style="max-width: 100%;"></a></p>
 <p>模型训练完成后，可以调用PEFT重写的save_pretrained函数保存权重，该方法只会保存LoRA训练的部分，因此权重文件特别小</p>
-<p>[https://github.com/tloen/alpaca-lora/blob/main/finetune.py#L273-L275](<a href="https://github.com/tloen/alpaca-lora/blob/main/finetune.py">https://github.com/tloen/alpaca-lora/blob/main/finetune.py</a>" \l "L273-L275)</p>
+<p><a href="https://github.com/tloen/alpaca-lora/blob/main/finetune.py#L273-L275">https://github.com/tloen/alpaca-lora/blob/main/finetune.py#L273-L275</a></p>
 <p><a target="_blank" rel="noopener noreferrer nofollow" href="https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/202410161402117.png"><img src="https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/202410161402117.png" alt="image.png" style="max-width: 100%;"></a></p>
 <p>推理：</p>
-<p>[https://github.com/tloen/alpaca-lora/blob/main/generate.py#L26-L52](<a href="https://github.com/tloen/alpaca-lora/blob/8bb8579e403dc78e37fe81ffbb253c413007323f/generate.py">https://github.com/tloen/alpaca-lora/blob/8bb8579e403dc78e37fe81ffbb253c413007323f/generate.py</a>" \l "L26-L52)</p>
+<p><a href="https://github.com/tloen/alpaca-lora/blob/main/generate.py#L26-L52">https://github.com/tloen/alpaca-lora/blob/main/generate.py#L26-L52</a></p>
 <p><a target="_blank" rel="noopener noreferrer nofollow" href="https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/202410161403515.png"><img src="https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/202410161403515.png" alt="image.png" style="max-width: 100%;"></a></p>
 <p>model先加载预训练模型，然后再通过PEFT加载LoRA权重，执行后续推理。</p></div>
 <div style="font-size:small;margin-top:8px;float:right;">转载请注明出处</div>
