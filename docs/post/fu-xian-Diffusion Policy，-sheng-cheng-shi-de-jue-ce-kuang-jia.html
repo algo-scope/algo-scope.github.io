@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html data-color-mode="light" data-dark-theme="dark" data-light-theme="light" lang="zh-CN">
+<head>
+    <meta content="text/html; charset=utf-8" http-equiv="content-type" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <link href='https://mirrors.sustech.edu.cn/cdnjs/ajax/libs/Primer/21.0.7/primer.css' rel='stylesheet' />
+    
+    <link rel="icon" href="https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/logo.png"><script>
+        let theme = localStorage.getItem("meek_theme") || "light";
+        document.documentElement.setAttribute("data-color-mode", theme);
+    </script>
+<meta name="description" content="## diffusion model原理
+https://segmentfault.com/a/1190000043744225#item-4
+https://lilianweng.github.io/posts/2021-07-11-diffusion-models/
+
+变分自编码器：
+![image.png](https://raw.githubusercontent.com/algo-scope/imgBed/main/202410/202411111649830.png)
+
+把某图像变成向量，再用该向量生成图像。">
+<meta property="og:title" content="复现Diffusion Policy，生成式的决策框架">
+<meta property="og:description" content="## diffusion model原理
+https://segmentfault.com/a/1190000043744225#item-4
+https://lilianweng.github.io/posts/2021-07-11-diffusion-models/
+
+变分自编码器：
+![image.png](https://raw.githubusercontent.com/algo-scope/imgBed/main/202410/202411111649830.png)
+
+把某图像变成向量，再用该向量生成图像。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://algo-scope.github.io/post/fu-xian-Diffusion%20Policy%EF%BC%8C-sheng-cheng-shi-de-jue-ce-kuang-jia.html">
+<meta property="og:image" content="https://raw.githubusercontent.com/algo-scope/imgBed/main/imgs/logo.png">
+<title>复现Diffusion Policy，生成式的决策框架</title>
+<link href="//unpkg.com/@wooorm/starry-night@2.1.1/style/both.css" rel="stylesheet" />
+
+
+</head>
+<style>
+body{box-sizing: border-box;min-width: 200px;max-width: 900px;margin: 20px auto;padding: 45px;font-size: 16px;font-family: sans-serif;line-height: 1.25;}
+#header{display:flex;padding-bottom:8px;border-bottom: 1px solid var(--borderColor-muted, var(--color-border-muted));margin-bottom: 16px;}
+#footer {margin-top:64px; text-align: center;font-size: small;}
+
+</style>
+
+<style>
+.postTitle{margin: auto 0;font-size:40px;font-weight:bold;}
+.title-right{display:flex;margin:auto 0 0 auto;}
+.title-right .circle{padding: 14px 16px;margin-right:8px;}
+#postBody{border-bottom: 1px solid var(--color-border-default);padding-bottom:36px;}
+#postBody hr{height:2px;}
+#cmButton{height:48px;margin-top:48px;}
+#comments{margin-top:64px;}
+.g-emoji{font-size:24px;}
+@media (max-width: 600px) {
+    body {padding: 8px;}
+    .postTitle{font-size:24px;}
+}
+.copy-feedback {
+    display: none;
+    position: absolute;
+    top: 10px;
+    right: 50px;
+    color: var(--color-fg-on-emphasis);
+    background-color: var(--color-fg-muted);
+    border-radius: 3px;
+    padding: 5px 8px;
+    font-size: 12px;
+}
+</style>
+
+
+
+
+<body>
+    <div id="header">
+<h1 class="postTitle">复现Diffusion Policy，生成式的决策框架</h1>
+<div class="title-right">
+    <a href="https://algo-scope.github.io" id="buttonHome" class="btn btn-invisible circle" title="首页">
+        <svg class="octicon" width="16" height="16">
+            <path id="pathHome" fill-rule="evenodd"></path>
+        </svg>
+    </a>
+    
+    <a href="https://github.com/algo-scope/algo-scope.github.io/issues/7" target="_blank" class="btn btn-invisible circle" title="Issue">
+        <svg class="octicon" width="16" height="16">
+            <path id="pathIssue" fill-rule="evenodd"></path>
+        </svg>
+    </a>
+    
+
+    <a class="btn btn-invisible circle" onclick="modeSwitch();" title="切换主题">
+        <svg class="octicon" width="16" height="16" >
+            <path id="themeSwitch" fill-rule="evenodd"></path>
+        </svg>
+    </a>
+
+</div>
+</div>
+    <div id="content">
+<div class="markdown-body" id="postBody"><h2>diffusion model原理</h2>
+<p><a href="https://segmentfault.com/a/1190000043744225#item-4" rel="nofollow">https://segmentfault.com/a/1190000043744225#item-4</a><br>
+<a href="https://lilianweng.github.io/posts/2021-07-11-diffusion-models/" rel="nofollow">https://lilianweng.github.io/posts/2021-07-11-diffusion-models/</a></p>
+<p>变分自编码器：<br>
+<a target="_blank" rel="noopener noreferrer nofollow" href="https://raw.githubusercontent.com/algo-scope/imgBed/main/202410/202411111649830.png"><img src="https://raw.githubusercontent.com/algo-scope/imgBed/main/202410/202411111649830.png" alt="image.png" style="max-width: 100%;"></a></p>
+<p>把某图像变成向量，再用该向量生成图像。</p>
+<p>扩散模型是一种特殊的VAE，其灵感来自于热力学：一个分布可以通过不断地添加噪声变成另一个分布。放到图像生成任务里，就是来自训练集的图像可以通过不断添加噪声变成符合标准正态分布的图像。从这个角度出发，我们可以对VAE做以下修改：1）不再训练一个可学习的编码器，而是把编码过程固定成不断添加噪声的过程；2）不再把图像压缩成更短的向量，而是自始至终都对一个等大的图像做操作。<br>
+<a target="_blank" rel="noopener noreferrer nofollow" href="https://raw.githubusercontent.com/algo-scope/imgBed/main/202410/202411111650596.png"><img src="https://raw.githubusercontent.com/algo-scope/imgBed/main/202410/202411111650596.png" alt="image.png" style="max-width: 100%;"></a><br>
+<a target="_blank" rel="noopener noreferrer nofollow" href="https://raw.githubusercontent.com/algo-scope/imgBed/main/202410/202411111650260.png"><img src="https://raw.githubusercontent.com/algo-scope/imgBed/main/202410/202411111650260.png" alt="image.png" style="max-width: 100%;"></a></p>
+<p>具体来说，扩散模型由<strong>正向过程</strong>和<strong>反向过程</strong>这两部分组成，对应VAE中的编码和解码。在正向过程中，输入$\mathbf{x}_0$会不断混入高斯噪声。经过$T$次加噪声操作后，图像$\mathbf{x}_T$会变成一幅符合标准正态分布的纯噪声图像。而在反向过程中，我们希望训练出一个神经网络，该网络能够学会$T$个去噪声操作，把$\mathbf{x}_T$还原回$\mathbf{x}_0$。网络的学习目标是让$T$个去噪声操作正好能抵消掉对应的加噪声操作。训练完毕后，只需要从标准正态分布里随机采样出一个噪声，再利用反向过程里的神经网络把该噪声恢复成一幅图像，就能够生成一幅图片了。</p>
+<h2>stable diffusion</h2>
+<p><a href="https://cloud.tencent.com/developer/article/2393003" rel="nofollow">https://cloud.tencent.com/developer/article/2393003</a></p>
+<p><a target="_blank" rel="noopener noreferrer nofollow" href="https://raw.githubusercontent.com/algo-scope/imgBed/main/202410/202411111659427.png"><img src="https://raw.githubusercontent.com/algo-scope/imgBed/main/202410/202411111659427.png" alt="image.png" style="max-width: 100%;"></a><br>
+相比于扩散模型，多了condition组件，也就相当于贝叶斯中的条件概率，通过条件控制生成的方向。</p>
+<h2>本文diffusion Policy详解</h2>
+<p><a href="https://blog.csdn.net/SherylBerg/article/details/139148787" rel="nofollow">https://blog.csdn.net/SherylBerg/article/details/139148787</a><br>
+<a href="https://zhuanlan.zhihu.com/p/670555655" rel="nofollow">https://zhuanlan.zhihu.com/p/670555655</a></p>
+<h3>背景知识</h3>
+<p><a target="_blank" rel="noopener noreferrer nofollow" href="https://raw.githubusercontent.com/algo-scope/imgBed/main/202410/202411081147237.png"><img src="https://raw.githubusercontent.com/algo-scope/imgBed/main/202410/202411081147237.png" alt="image.png" style="max-width: 100%;"></a></p>
+<p>a）显式策略：行为克隆，将观察o映射到动作a，图中有3种动作表示方法：<br>
+1. 标量：将动作表示为实数，连续动作空间<br>
+2. 混合高斯：离散动作空间<br>
+3. 分类：离散动作空间<br>
+b）隐式策略：基于能量的模型 Energy-based models（EBM）。每个动作被分配一个能量值，动作预测对应于寻找最小能量动作的优化问题。<br>
+能量函数参考文献：</p>
+<ul>
+<li>
+<p><a href="https://arxiv.org/abs/2109.00137" rel="nofollow">https://arxiv.org/abs/2109.00137</a></p>
+</li>
+<li>
+<p><a href="https://arxiv.org/abs/2004.09141" rel="nofollow">https://arxiv.org/abs/2004.09141</a></p>
+</li>
+<li>
+<p><a href="https://odie2630463.github.io/2021/06/01/ebm-1/" rel="nofollow">https://odie2630463.github.io/2021/06/01/ebm-1/</a></p>
+</li>
+<li>
+<p><a href="https://zhuanlan.zhihu.com/p/343529491" rel="nofollow">https://zhuanlan.zhihu.com/p/343529491</a></p>
+</li>
+<li>
+<p><a href="https://blog.csdn.net/qq_51221943/article/details/121108242" rel="nofollow">https://blog.csdn.net/qq_51221943/article/details/121108242</a><br>
+文章中提到的能量函数实际上也就是损失函数，是施加噪声和预测噪声的mse。基于能量的模型看起来更像是一个概念，求极大似然看起来就是求最小能量函数。</p>
+</li>
+</ul>
+<h3>什么是Diffusion Policy</h3>
+<p>解决的是机器人输出的问题，输入端使用非常普通的东西，聚焦于机器人的动作端<br>
+<a target="_blank" rel="noopener noreferrer nofollow" href="https://raw.githubusercontent.com/algo-scope/imgBed/main/202410/202411111102738.png"><img src="https://raw.githubusercontent.com/algo-scope/imgBed/main/202410/202411111102738.png" alt="image.png" style="max-width: 100%;"></a></p>
+<p>sd模型输出图片，Diffusion Policy输出机器人动作</p>
+<h3>机器人Multi-Modal分布问题</h3>
+<p>和深度学习的多模态不一样，机器人的多模态讲的是解决某一特定任务的方式是多样的，而不是唯一的。但神经网络预测只能给出单一方式。</p>
+<blockquote>
+<p>关于什么是机器人Multi-Moda问题，迟宬给了非常清晰的解释：假设我现在在开车，前面有一棵树。比如说，我雇佣了100个司机来解决这个问题。在这种情况下，有可能有50个司机选择往左拐，绕过树的左边，还有50个司机选择从树的右边绕过去。在这种情况下，往左绕和往右绕都是完全合理的。然而，当我们将所有这些解决方案合并为一个时，问题就变成了一个多模态分布，即我看到的相同场景有两种不同的选择。这对传统神经网络的预测来说并不友好，因为它通常使用均方误差（MSE）损失进行训练，而这无法有效处理Multi-Modal情况。<br>
+这和传统机器人控制需要对机器人动作严格控制的思路相违背，每次只执行一项任务，整个机器人系统都被认为是受到严格控制的。这也是为什么大多数人没有把机器人动作生成表现为一个概率分布的原因。</p>
+</blockquote>
+<h3>Action Space Scalability的问题</h3>
+<p>关于Action Space Scalabiltiy或者sequential correlation问题，我简单理解就是机器人对未来动作的预测不应该只局限于眼前的一步两步动作，而应该更有前瞻性，可以往前预测数十步动作。</p>
+<p><a target="_blank" rel="noopener noreferrer nofollow" href="https://raw.githubusercontent.com/algo-scope/imgBed/main/202410/202411111123742.png"><img src="https://raw.githubusercontent.com/algo-scope/imgBed/main/202410/202411111123742.png" alt="image.png" style="max-width: 100%;"></a></p>
+<p>使用分类网络单步预测，随着动作维度增加，计算成本呈指数级增长。</p>
+<blockquote>
+<p>我们再回到了之前提到的问题。假设我们在驾驶车辆，我们可以在下一步稍微往左偏一点，再下一步再进一步左偏。实际上，我们所绘制的行车轨迹有两种可行的选择。一种是持续向左开，从左侧绕过去，一直保持这种路径。另一种是持续向右开，从右侧绕过去。在预测这个动作时，我们可以逐步进行预测，即在每个时刻，预测下一步应该怎么走。然而，采用这种方式可能会导致问题，例如，如果我稍微向左偏了一点，我可能会左右摇摆；如果我稍微向右偏了一点，也有可能左右摇摆。这个问题被称为动作不一致（Action Inconsistent），即当我希望向左行驶时，神经网络的预测中仍然存在一定概率是向右的情况，这时候就会发现决策非常犹豫，时而向左，时而向右，这是一个问题。</p>
+</blockquote>
+<h3>Training Stability问题</h3>
+<p>Diffusion Policy和其他使用生成式模型的策略比，他的最大特点是训练过程非常稳定。<br>
+<a target="_blank" rel="noopener noreferrer nofollow" href="https://raw.githubusercontent.com/algo-scope/imgBed/main/202410/202411111146347.png"><img src="https://raw.githubusercontent.com/algo-scope/imgBed/main/202410/202411111146347.png" alt="image.png" style="max-width: 100%;"></a></p>
+<p>Diffusion方法的强大之处在于，它的性能不逊色于GAN，但其训练过程非常稳定。基本上，你可以随便调整参数，生成器就能够输出结果，可能效果不是最优的，但基本上都能work。</p>
+<h2>代码复现</h2>
+<blockquote>
+<p>在论文中，我们使用了模仿学习，即由人类遥控机器人执行动作，收集数据，并通过学习将其转化为策略。这种学习过程通过遥控机器人完成一系列动作开始，然后将其迁移到机器人身上。输入数据包括过去几帧的图像，而输出涉及对未来动作的预测。</p>
+</blockquote>
+<h3>命令行</h3>
+<pre class="notranslate"><code class="notranslate">python train.py --config-dir=. --config-name=image_pusht_diffusion_policy_cnn.yaml training.seed=42 training.device=cuda:0 hydra.run.dir='data/outputs/${now:%Y.%m.%d}/${now:%H.%M.%S}_${name}_${task_name}'
+</code></pre>
+<h3>训练</h3>
+<h4>条件控制怎么加的</h4>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-k">if</span> <span class="pl-s1">self</span>.<span class="pl-s1">obs_as_global_cond</span>:     <span class="pl-c"># true</span>
+	<span class="pl-c"># reshape B, T, ... to B*T</span>
+	<span class="pl-s1">this_nobs</span> <span class="pl-c1">=</span> <span class="pl-en">dict_apply</span>(<span class="pl-s1">nobs</span>,
+		<span class="pl-k">lambda</span> <span class="pl-s1">x</span>: <span class="pl-s1">x</span>[:,:<span class="pl-s1">self</span>.<span class="pl-s1">n_obs_steps</span>,...].<span class="pl-en">reshape</span>(<span class="pl-c1">-</span><span class="pl-c1">1</span>,<span class="pl-c1">*</span><span class="pl-s1">x</span>.<span class="pl-s1">shape</span>[<span class="pl-c1">2</span>:]))
+	<span class="pl-s1">nobs_features</span> <span class="pl-c1">=</span> <span class="pl-s1">self</span>.<span class="pl-en">obs_encoder</span>(<span class="pl-s1">this_nobs</span>)
+	<span class="pl-c"># reshape back to B, Do</span>
+	<span class="pl-s1">global_cond</span> <span class="pl-c1">=</span> <span class="pl-s1">nobs_features</span>.<span class="pl-en">reshape</span>(<span class="pl-s1">batch_size</span>, <span class="pl-c1">-</span><span class="pl-c1">1</span>)</pre></div>
+<p>这里面nobs就是输入图像，经过一个encoder以后reshape，传入model</p>
+<p>diffusion_policy/policy/diffusion_unet_hybrid_image_policy.py，<code class="notranslate">compute_loss</code>函数。<br>
+这里<code class="notranslate">pred_type == 'epsilon'</code>，所以模型输出的是noise。</p>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-c"># Predict the noise residual</span>
+<span class="pl-s1">pred</span> <span class="pl-c1">=</span> <span class="pl-s1">self</span>.<span class="pl-en">model</span>(<span class="pl-s1">noisy_trajectory</span>, <span class="pl-s1">timesteps</span>,
+	<span class="pl-s1">local_cond</span><span class="pl-c1">=</span><span class="pl-s1">local_cond</span>, <span class="pl-s1">global_cond</span><span class="pl-c1">=</span><span class="pl-s1">global_cond</span>)
+<span class="pl-s1">pred_type</span> <span class="pl-c1">=</span> <span class="pl-s1">self</span>.<span class="pl-s1">noise_scheduler</span>.<span class="pl-s1">config</span>.<span class="pl-s1">prediction_type</span>
+<span class="pl-k">if</span> <span class="pl-s1">pred_type</span> <span class="pl-c1">==</span> <span class="pl-s">'epsilon'</span>:
+	<span class="pl-s1">target</span> <span class="pl-c1">=</span> <span class="pl-s1">noise</span>
+<span class="pl-k">elif</span> <span class="pl-s1">pred_type</span> <span class="pl-c1">==</span> <span class="pl-s">'sample'</span>:
+	<span class="pl-s1">target</span> <span class="pl-c1">=</span> <span class="pl-s1">trajectory</span>
+<span class="pl-k">else</span>:
+	<span class="pl-k">raise</span> <span class="pl-v">ValueError</span>(<span class="pl-s">f"Unsupported prediction type <span class="pl-s1"><span class="pl-kos">{</span><span class="pl-s1">pred_type</span><span class="pl-kos">}</span></span>"</span>)
+
+<span class="pl-s1">loss</span> <span class="pl-c1">=</span> <span class="pl-v">F</span>.<span class="pl-en">mse_loss</span>(<span class="pl-s1">pred</span>, <span class="pl-s1">target</span>, <span class="pl-s1">reduction</span><span class="pl-c1">=</span><span class="pl-s">'none'</span>)
+<span class="pl-s1">loss</span> <span class="pl-c1">=</span> <span class="pl-s1">loss</span> <span class="pl-c1">*</span> <span class="pl-s1">loss_mask</span>.<span class="pl-en">type</span>(<span class="pl-s1">loss</span>.<span class="pl-s1">dtype</span>)
+<span class="pl-s1">loss</span> <span class="pl-c1">=</span> <span class="pl-en">reduce</span>(<span class="pl-s1">loss</span>, <span class="pl-s">'b ... -&gt; b (...)'</span>, <span class="pl-s">'mean'</span>)
+<span class="pl-s1">loss</span> <span class="pl-c1">=</span> <span class="pl-s1">loss</span>.<span class="pl-en">mean</span>()
+<span class="pl-k">return</span> <span class="pl-s1">loss</span></pre></div>
+<h3>推理</h3>
+<p>diffusion_policy/policy/diffusion_unet_hybrid_image_policy.py，<code class="notranslate">predict_action</code>函数调用<code class="notranslate">conditional_sample</code>函数。<br>
+预测出的是噪声model_output，然后通过<code class="notranslate">DDPMScheduler</code>根据噪声推理出前一幅图像（action、轨迹、坐标）。<br>
+这个数据集是pushT image，任务是把一个T型零件推到纸上画的线里<br>
+<a target="_blank" rel="noopener noreferrer nofollow" href="https://raw.githubusercontent.com/algo-scope/imgBed/main/202410/202411111540205.png"><img src="https://raw.githubusercontent.com/algo-scope/imgBed/main/202410/202411111540205.png" alt="image.png" style="max-width: 100%;"></a><br>
+所以数据集中的action或者trajectory是二维的，代表xy坐标。</p>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-c"># set step values</span>
+<span class="pl-s1">scheduler</span>.<span class="pl-en">set_timesteps</span>(<span class="pl-s1">self</span>.<span class="pl-s1">num_inference_steps</span>)
+<span class="pl-k">for</span> <span class="pl-s1">t</span> <span class="pl-c1">in</span> <span class="pl-s1">scheduler</span>.<span class="pl-s1">timesteps</span>:
+	<span class="pl-c"># 1. apply conditioning</span>
+	<span class="pl-s1">trajectory</span>[<span class="pl-s1">condition_mask</span>] <span class="pl-c1">=</span> <span class="pl-s1">condition_data</span>[<span class="pl-s1">condition_mask</span>]
+	<span class="pl-c"># 2. predict model output</span>
+	<span class="pl-s1">model_output</span> <span class="pl-c1">=</span> <span class="pl-en">model</span>(<span class="pl-s1">trajectory</span>, <span class="pl-s1">t</span>,
+		<span class="pl-s1">local_cond</span><span class="pl-c1">=</span><span class="pl-s1">local_cond</span>, <span class="pl-s1">global_cond</span><span class="pl-c1">=</span><span class="pl-s1">global_cond</span>)
+	<span class="pl-c"># 3. compute previous image: x_t -&gt; x_t-1</span>
+	<span class="pl-s1">trajectory</span> <span class="pl-c1">=</span> <span class="pl-s1">scheduler</span>.<span class="pl-en">step</span>(
+		<span class="pl-s1">model_output</span>, <span class="pl-s1">t</span>, <span class="pl-s1">trajectory</span>,
+		<span class="pl-s1">generator</span><span class="pl-c1">=</span><span class="pl-s1">generator</span>,
+		<span class="pl-c1">**</span><span class="pl-s1">kwargs</span>
+		).<span class="pl-s1">prev_sample</span>
+<span class="pl-c"># finally make sure conditioning is enforced</span>
+<span class="pl-s1">trajectory</span>[<span class="pl-s1">condition_mask</span>] <span class="pl-c1">=</span> <span class="pl-s1">condition_data</span>[<span class="pl-s1">condition_mask</span>]        
+<span class="pl-k">return</span> <span class="pl-s1">trajectory</span></pre></div>
+<p>DDPMScheduler模块的代码解释可以看：<a href="https://blog.csdn.net/Lizhi_Tech/article/details/133928749" rel="nofollow">https://blog.csdn.net/Lizhi_Tech/article/details/133928749</a> ，主要功能是实现逆向扩散，根据模型输出的正向噪声进行逆操作还原出原图。</p>
+<h3>结果</h3>
+<pre class="notranslate"><code class="notranslate">wandb: Run summary:
+wandb:                      epoch 3049
+wandb:                global_step 512399
+wandb:                         lr 0.0
+wandb:            test/mean_score 0.85039
+wandb: test/sim_max_reward_100000 1.0
+wandb: test/sim_max_reward_100001 0.68677
+wandb: test/sim_max_reward_100002 1.0
+wandb: test/sim_max_reward_100003 0.88879
+wandb: test/sim_max_reward_100004 1.0
+wandb: test/sim_max_reward_100005 0.97553
+wandb: test/sim_max_reward_100006 0.66709
+wandb: test/sim_max_reward_100007 0.9642
+wandb: test/sim_max_reward_100008 1.0
+wandb: test/sim_max_reward_100009 0.90598
+wandb: test/sim_max_reward_100010 0.98676
+wandb: test/sim_max_reward_100011 1.0
+wandb: test/sim_max_reward_100012 0.99331
+wandb: test/sim_max_reward_100013 0.12877
+wandb: test/sim_max_reward_100014 1.0
+wandb: test/sim_max_reward_100015 0.68957
+wandb: test/sim_max_reward_100016 1.0
+wandb: test/sim_max_reward_100017 1.0
+wandb: test/sim_max_reward_100018 1.0
+wandb: test/sim_max_reward_100019 0.67922
+wandb: test/sim_max_reward_100020 1.0
+wandb: test/sim_max_reward_100021 0.60691
+wandb: test/sim_max_reward_100022 0.72734
+wandb: test/sim_max_reward_100023 0.0
+wandb: test/sim_max_reward_100024 0.0
+wandb: test/sim_max_reward_100025 1.0
+wandb: test/sim_max_reward_100026 1.0
+wandb: test/sim_max_reward_100027 1.0
+wandb: test/sim_max_reward_100028 1.0
+wandb: test/sim_max_reward_100029 0.99959
+wandb: test/sim_max_reward_100030 0.60766
+wandb: test/sim_max_reward_100031 0.8071
+wandb: test/sim_max_reward_100032 1.0
+wandb: test/sim_max_reward_100033 1.0
+wandb: test/sim_max_reward_100034 1.0
+wandb: test/sim_max_reward_100035 1.0
+wandb: test/sim_max_reward_100036 1.0
+wandb: test/sim_max_reward_100037 1.0
+wandb: test/sim_max_reward_100038 0.99934
+wandb: test/sim_max_reward_100039 1.0
+wandb: test/sim_max_reward_100040 0.72388
+wandb: test/sim_max_reward_100041 0.03105
+wandb: test/sim_max_reward_100042 0.99354
+wandb: test/sim_max_reward_100043 0.46994
+wandb: test/sim_max_reward_100044 1.0
+wandb: test/sim_max_reward_100045 1.0
+wandb: test/sim_max_reward_100046 1.0
+wandb: test/sim_max_reward_100047 1.0
+wandb: test/sim_max_reward_100048 1.0
+wandb: test/sim_max_reward_100049 0.98717
+wandb:           train/mean_score 0.7752
+wandb:     train/sim_max_reward_0 0.71402
+wandb:     train/sim_max_reward_1 1.0
+wandb:     train/sim_max_reward_2 0.60603
+wandb:     train/sim_max_reward_3 0.72395
+wandb:     train/sim_max_reward_4 1.0
+wandb:     train/sim_max_reward_5 0.60723
+wandb:     train_action_mse_error 0.46457
+wandb:                 train_loss 0.00025
+wandb:                   val_loss 0.23961
+wandb: 
+wandb: Synced 2023.01.16-20.20.06_train_diffusion_unet_hybrid_pusht_image: https://wandb.ai/zhaowenyi7-zjlab/diffusion_policy_debug/runs/y8onqtcx
+wandb: Synced 6 W&amp;B file(s), 366 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: ./data/outputs/2024.11.07/14.06.17_train_diffusion_unet_hybrid_pusht_image/wandb/run-20241107_140631-y8onqtcx/logs
+</code></pre></div>
+<div style="font-size:small;margin-top:8px;float:right;">转载请注明出处</div>
+
+<button class="btn btn-block" type="button" onclick="openComments()" id="cmButton">评论</button>
+<div class="comments" id="comments"></div>
+
+</div>
+    <div id="footer"><div id="footer1">Copyright © <span id="copyrightYear"></span> <a href="https://algo-scope.github.io">AlgoScope</a></div>
+<div id="footer2">
+    <span id="runday"></span><span>Powered by <a href="https://meekdai.com/Gmeek.html" target="_blank">Gmeek</a></span>
+</div>
+
+<script>
+var now=new Date();
+document.getElementById("copyrightYear").innerHTML=now.getFullYear();
+
+if("10/10/2024"!=""){
+    var startSite=new Date("10/10/2024");
+    var diff=now.getTime()-startSite.getTime();
+    var diffDay=Math.floor(diff/(1000*60*60*24));
+    document.getElementById("runday").innerHTML="网站运行"+diffDay+"天"+" • ";
+}
+</script></div>
+</body>
+<script>
+var IconList={'sun': 'M8 10.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM8 12a4 4 0 100-8 4 4 0 000 8zM8 0a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0V.75A.75.75 0 018 0zm0 13a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 018 13zM2.343 2.343a.75.75 0 011.061 0l1.06 1.061a.75.75 0 01-1.06 1.06l-1.06-1.06a.75.75 0 010-1.06zm9.193 9.193a.75.75 0 011.06 0l1.061 1.06a.75.75 0 01-1.06 1.061l-1.061-1.06a.75.75 0 010-1.061zM16 8a.75.75 0 01-.75.75h-1.5a.75.75 0 010-1.5h1.5A.75.75 0 0116 8zM3 8a.75.75 0 01-.75.75H.75a.75.75 0 010-1.5h1.5A.75.75 0 013 8zm10.657-5.657a.75.75 0 010 1.061l-1.061 1.06a.75.75 0 11-1.06-1.06l1.06-1.06a.75.75 0 011.06 0zm-9.193 9.193a.75.75 0 010 1.06l-1.06 1.061a.75.75 0 11-1.061-1.06l1.06-1.061a.75.75 0 011.061 0z', 'moon': 'M9.598 1.591a.75.75 0 01.785-.175 7 7 0 11-8.967 8.967.75.75 0 01.961-.96 5.5 5.5 0 007.046-7.046.75.75 0 01.175-.786zm1.616 1.945a7 7 0 01-7.678 7.678 5.5 5.5 0 107.678-7.678z', 'sync': 'M1.705 8.005a.75.75 0 0 1 .834.656 5.5 5.5 0 0 0 9.592 2.97l-1.204-1.204a.25.25 0 0 1 .177-.427h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7.002 7.002 0 0 1 1.05 8.84a.75.75 0 0 1 .656-.834ZM8 2.5a5.487 5.487 0 0 0-4.131 1.869l1.204 1.204A.25.25 0 0 1 4.896 6H1.25A.25.25 0 0 1 1 5.75V2.104a.25.25 0 0 1 .427-.177l1.38 1.38A7.002 7.002 0 0 1 14.95 7.16a.75.75 0 0 1-1.49.178A5.5 5.5 0 0 0 8 2.5Z', 'home': 'M6.906.664a1.749 1.749 0 0 1 2.187 0l5.25 4.2c.415.332.657.835.657 1.367v7.019A1.75 1.75 0 0 1 13.25 15h-3.5a.75.75 0 0 1-.75-.75V9H7v5.25a.75.75 0 0 1-.75.75h-3.5A1.75 1.75 0 0 1 1 13.25V6.23c0-.531.242-1.034.657-1.366l5.25-4.2Zm1.25 1.171a.25.25 0 0 0-.312 0l-5.25 4.2a.25.25 0 0 0-.094.196v7.019c0 .138.112.25.25.25H5.5V8.25a.75.75 0 0 1 .75-.75h3.5a.75.75 0 0 1 .75.75v5.25h2.75a.25.25 0 0 0 .25-.25V6.23a.25.25 0 0 0-.094-.195Z', 'github': 'M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z', 'copy': 'M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z', 'check': 'M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z'};
+var utterancesLoad=0;
+
+let themeSettings={
+    "dark": ["dark","moon","#00f0ff","dark-blue"],
+    "light": ["light","sun","#ff5000","github-light"],
+    "auto": ["auto","sync","","preferred-color-scheme"]
+};
+function changeTheme(mode, icon, color, utheme){
+    document.documentElement.setAttribute("data-color-mode",mode);
+    document.getElementById("themeSwitch").setAttribute("d",value=IconList[icon]);
+    document.getElementById("themeSwitch").parentNode.style.color=color;
+    if(utterancesLoad==1){utterancesTheme(utheme);}
+}
+function modeSwitch(){
+    let currentMode=document.documentElement.getAttribute('data-color-mode');
+    let newMode = currentMode === "light" ? "dark" : currentMode === "dark" ? "auto" : "light";
+    localStorage.setItem("meek_theme", newMode);
+    if(themeSettings[newMode]){
+        changeTheme(...themeSettings[newMode]);
+    }
+}
+function utterancesTheme(theme){
+    const message={type:'set-theme',theme: theme};
+    const iframe=document.getElementsByClassName('utterances-frame')[0];
+    iframe.contentWindow.postMessage(message,'https://utteranc.es');
+}
+if(themeSettings[theme]){changeTheme(...themeSettings[theme]);}
+console.log("\n %c Gmeek last https://github.com/Meekdai/Gmeek \n","padding:5px 0;background:#02d81d;color:#fff");
+</script>
+
+<script>
+document.getElementById("pathHome").setAttribute("d",IconList["home"]);
+document.getElementById("pathIssue").setAttribute("d",IconList["github"]);
+
+
+
+function openComments(){
+    cm=document.getElementById("comments");
+    cmButton=document.getElementById("cmButton");
+    cmButton.innerHTML="loading";
+    span=document.createElement("span");
+    span.setAttribute("class","AnimatedEllipsis");
+    cmButton.appendChild(span);
+
+    script=document.createElement("script");
+    script.setAttribute("src","https://utteranc.es/client.js");
+    script.setAttribute("repo","algo-scope/algo-scope.github.io");
+    script.setAttribute("issue-term","title");
+    
+    if(localStorage.getItem("meek_theme")=="dark"){script.setAttribute("theme","dark-blue");}
+    else if(localStorage.getItem("meek_theme")=="light") {script.setAttribute("theme","github-light");}
+    else{script.setAttribute("theme","preferred-color-scheme");}
+    
+    script.setAttribute("crossorigin","anonymous");
+    script.setAttribute("async","");
+    cm.appendChild(script);
+
+    int=self.setInterval("iFrameLoading()",200);
+}
+
+function iFrameLoading(){
+    var utterances=document.getElementsByClassName('utterances');
+    if(utterances.length==1){
+        if(utterances[0].style.height!=""){
+            utterancesLoad=1;
+            int=window.clearInterval(int);
+            document.getElementById("cmButton").style.display="none";
+            console.log("utterances Load OK");
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const createClipboardHTML = (codeContent, additionalClasses = '') => `
+        <pre class="notranslate"><code class="notranslate">${codeContent}</code></pre>
+        <div class="clipboard-container position-absolute right-0 top-0 ${additionalClasses}">
+            <clipboard-copy class="ClipboardButton btn m-2 p-0" role="button" style="display: inherit;">
+                <svg height="16" width="16" class="octicon octicon-copy m-2"><path d="${IconList["copy"]}"></path></svg>
+                <svg height="16" width="16" class="octicon octicon-check color-fg-success m-2 d-none"><path d="${IconList["check"]}"></path></svg>
+            </clipboard-copy>
+            <div class="copy-feedback">Copied!</div>
+        </div>
+    `;
+
+    const handleCodeElements = (selector = '') => {
+        document.querySelectorAll(selector).forEach(codeElement => {
+            const codeContent = codeElement.innerHTML;
+            const newStructure = document.createElement('div');
+            newStructure.className = 'snippet-clipboard-content position-relative overflow-auto';
+            newStructure.innerHTML = createClipboardHTML(codeContent);
+
+            const parentElement = codeElement.parentElement;
+            if (selector.includes('highlight')) {
+                parentElement.insertBefore(newStructure, codeElement.nextSibling);
+                parentElement.removeChild(codeElement);
+            } else {
+                parentElement.parentElement.replaceChild(newStructure, parentElement);
+            }
+        });
+    };
+
+    handleCodeElements('pre.notranslate > code.notranslate');
+    handleCodeElements('div.highlight > pre.notranslate');
+
+    let currentFeedback = null;
+    document.querySelectorAll('clipboard-copy').forEach(copyButton => {
+        copyButton.addEventListener('click', () => {
+            const codeContent = copyButton.closest('.snippet-clipboard-content').innerText;
+            const tempTextArea = document.createElement('textarea');
+            tempTextArea.value = codeContent;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempTextArea);
+
+            const copyIcon = copyButton.querySelector('.octicon-copy');
+            const checkIcon = copyButton.querySelector('.octicon-check');
+            const copyFeedback = copyButton.nextElementSibling;
+
+            if (currentFeedback && currentFeedback !== copyFeedback) {currentFeedback.style.display = 'none';}
+            currentFeedback = copyFeedback;
+
+            copyIcon.classList.add('d-none');
+            checkIcon.classList.remove('d-none');
+            copyFeedback.style.display = 'block';
+            copyButton.style.borderColor = 'var(--color-success-fg)';
+
+            setTimeout(() => {
+                copyIcon.classList.remove('d-none');
+                checkIcon.classList.add('d-none');
+                copyFeedback.style.display = 'none';
+                copyButton.style.borderColor = '';
+            }, 2000);
+        });
+    });
+});
+
+</script>
+
+
+</html>
